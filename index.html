@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly School Schedule</title>
+  
+  <style>
+    :root {
+      --bg-color: #f4f6f8;
+      --card-bg: #ffffff;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --border-color: #e5e7eb;
+      --accent-color: #2563eb;
+      --accent-light: #dbeafe;
+      --active-border: #2563eb;
+      --rating-bg: #f3f4f6;
+      --rating-text: #374151;
+    }
+
+    body.dark-theme {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --border-color: #334155;
+      --accent-color: #3b82f6;
+      --accent-light: #1e3a8a;
+      --active-border: #60a5fa;
+      --rating-bg: #334155;
+      --rating-text: #f3f4f6;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 2rem 1rem;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .schedule-container {
+      max-width: 650px;
+      margin: 0 auto;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .controls-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    select, button {
+      background: var(--card-bg);
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .status-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .status-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    #current-clock {
+      font-size: 1.5rem;
+      font-weight: 700;
+      font-family: monospace;
+    }
+
+    .status-badge {
+      background-color: var(--accent-light);
+      color: var(--accent-color);
+      padding: 0.3rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .countdown-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .timer-box {
+      background-color: var(--bg-color);
+      padding: 0.75rem;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .timer-box small {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .timer-text {
+      font-size: 1.25rem;
+      font-weight: 700;
+      font-family: monospace;
+    }
+
+    .progress-container {
+      width: 100%;
+      height: 8px;
+      background-color: var(--border-color);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background-color: var(--accent-color);
+      transition: width 0.4s ease;
+    }
+
+    .day-schedule {
+      display: none;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .day-schedule.active-day {
+      display: flex;
+    }
+
+    .class-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .card-left {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .card-time {
+      font-weight: 700;
+      font-family: monospace;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .card-info h3 {
+      font-size: 1.05rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .card-info p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .rating-badge {
+      background-color: var(--rating-bg);
+      color: var(--rating-text);
+      font-size: 0.85rem;
+      font-weight: 700;
+      padding: 0.35rem 0.65rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    .class-card.active-class {
+      border: 2px solid var(--active-border);
+    }
+
+    .class-card.active-class .card-time {
+      color: var(--accent-color);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="schedule-container">
+    <div class="header-bar">
+      <h1>Schedule</h1>
+      <div class="controls-group">
+        <select id="day-select">
+          <option value="1">Monday</option>
+          <option value="2">Tuesday</option>
+          <option value="3">Wednesday</option>
+          <option value="4">Thursday</option>
+          <option value="5">Friday</option>
+        </select>
+        <button id="theme-toggle">🌙</button>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <div class="status-header">
+        <span id="current-clock">00:00:00</span>
+        <span id="active-status-tag" class="status-badge">Off Duty</span>
+      </div>
+      
+      <div class="countdown-group">
+        <div class="timer-box">
+          <small>Time Left in Period</small>
+          <div id="class-countdown" class="timer-text">--:--</div>
+        </div>
+        <div class="timer-box">
+          <small>Time Left in Day</small>
+          <div id="day-countdown" class="timer-text">--:--</div>
+        </div>
+      </div>
+
+      <div class="progress-container">
+        <div id="day-progress" class="progress-bar"></div>
+      </div>
+    </div>
+
+    <!-- MONDAY -->
+    <div class="day-schedule" id="day-1">
+      <div class="class-card" data-start="08:05" data-end="08:50">
+        <div class="card-left">
+          <div class="card-time">08:05 - 08:50</div>
+          <div class="card-info"><h3>Advisory/Assembly - MS</h3><p>Room 2321 • Zepeda, Jesus</p></div>
+        </div>
+        <span class="rating-badge">★ 8.5/10</span>
+      </div>
+      <div class="class-card" data-start="08:55" data-end="09:40">
+        <div class="card-left">
+          <div class="card-time">08:55 - 09:40</div>
+          <div class="card-info"><h3>Hindi MS L3 Beginner 6</h3><p>Room 1318 • Mehta, Nikhil</p></div>
+        </div>
+        <span class="rating-badge">★ 1/10</span>
+      </div>
+      <div class="class-card" data-start="09:55" data-end="10:40">
+        <div class="card-left">
+          <div class="card-time">09:55 - 10:40</div>
+          <div class="card-info"><h3>Extended Math - 6</h3><p>Room 1225 • Olmedo, Jose</p></div>
+        </div>
+        <span class="rating-badge">★ 7.8/10</span>
+      </div>
+      <div class="class-card" data-start="10:45" data-end="11:30">
+        <div class="card-left">
+          <div class="card-time">10:45 - 11:30</div>
+          <div class="card-info"><h3>English Lit & Lang - 6/6eme</h3><p>Room 3320 • Molly, Jean Boyd</p></div>
+        </div>
+        <span class="rating-badge">★ 6.9/10</span>
+      </div>
+      <div class="class-card" data-start="11:35" data-end="12:20">
+        <div class="card-left">
+          <div class="card-time">11:35 - 12:20</div>
+          <div class="card-info"><h3>History/Geography - 6</h3><p>Room 3206 • Davis, Sarai</p></div>
+        </div>
+        <span class="rating-badge">★ 5.3/10</span>
+      </div>
+      <div class="class-card" data-start="12:20" data-end="13:15">
+        <div class="card-left">
+          <div class="card-time">12:20 - 13:15</div>
+          <div class="card-info"><h3>Lunch</h3><p>Cafeteria</p></div>
+        </div>
+        <span class="rating-badge">★ 10/10</span>
+      </div>
+      <div class="class-card" data-start="13:20" data-end="14:05">
+        <div class="card-left">
+          <div class="card-time">13:20 - 14:05</div>
+          <div class="card-info"><h3>Integrated Science - 6</h3><p>Room 2333 • Zepeda, Jesus</p></div>
+        </div>
+        <span class="rating-badge">★ 9.5/10</span>
+      </div>
+      <div class="class-card" data-start="14:10" data-end="14:55">
+        <div class="card-left">
+          <div class="card-time">14:10 - 14:55</div>
+          <div class="card-info"><h3>Fine Arts - Digital Photography</h3><p>Room 501 • Lee, Ha Na</p></div>
+        </div>
+        <span class="rating-badge">★ 8.5/10</span>
+      </div>
+      <div class="class-card" data-start="15:00" data-end="15:45">
+        <div class="card-left">
+          <div class="card-time">15:00 - 15:45</div>
+          <div class="card-info"><h3>PIB Spanish L2 - A1.1 - 6</h3><p>Room 1324 • Bevilacqua, Renata</p></div>
+        </div>
+        <span class="rating-badge">★ 7.9/10</span>
+      </div>
+      <div class="class-card" data-start="15:45" data-end="16:35">
+        <div class="card-left">
+          <div class="card-time">15:45 - 16:35</div>
+          <div class="card-info"><h3>Homework</h3><p>Study Hall</p></div>
+        </div>
+      </div>
+      <div class="class-card" data-start="16:45" data-end="17:45">
+        <div class="card-left">
+          <div class="card-time">16:45 - 17:45</div>
+          <div class="card-info"><h3>Soccer</h3><p>Field</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TUESDAY -->
+    <div class="day-schedule" id="day-2">
+      <div class="class-card" data-start="08:05" data-end="08:50">
+        <div class="card-left">
+          <div class="card-time">08:05 - 08:50</div>
+          <div class="card-info"><h3>P.E. / EPS - 6/6eme</h3><p>PAAC • Salinas, Vanessa</p></div>
+        </div>
+        <span class="rating-badge">★ 8.5/10</span>
+      </div>
+      <div class="class-card" data-start="08:55" data-end="09:40">
+        <div class="card-left">
+          <div class="card-time">08:55 - 09:40</div>
+          <div class="card-info"><h3>P.E. / EPS - 6/6eme</h3><p>PAAC • Salinas, Vanessa</p></div>
+        </div>
+        <span class="rating-badge">★ 8.5/10</span>
+      </div>
+      <div class="class-card" data-start="09:55" data-end="10:40">
+        <div class="card-left">
+          <div class="card-time">09:55 - 10:40</div>
+          <div class="card-info"><h3>English Lit & Lang - 6/6eme</h3><p>Room 3320 • Molly, Jean Boyd</p></div>
+        </div>
+        <span class="rating-badge">★ 6.9/10</span>
+      </div>
+      <div class="class-card" data-start="10:45" data-end="11:30">
+        <div class="card-left">
+          <div class="card-time">10:45 - 11:30</div>
+          <div class="card-info"><h3>English Lit & Lang - 6/6eme</h3><p>Room 3320 • Molly, Jean Boyd</p></div>
+        </div>
+        <span class="rating-badge">★ 6.9/10</span>
+      </div>
+      <div class="class-card" data-start="11:35" data-end="12:20">
+        <div class="card-left">
+          <div class="card-time">11:35 - 12:20</div>
+          <div class="card-info"><h3>Fine Arts - Digital Photography</h3><p>Room 501 • Lee, Ha Na</p></div>
+        </div>
+        <span class="rating-badge">★ 8.5/10</span>
+      </div>
+      <div class="class-card" data-start="12:20" data-end="13:15">
+        <div class="card-left">
+          <div class="card-time">12:20 - 13:15</div>
+          <div class="card-info"><h3>Lunch</h3><p>Cafeteria</p></div>
+        </div>
+        <span class="rating-badge">★ 10/10</span>
+      </div>
+      <div class="class-card" data-start="13:20" data-end="14:05">
+        <div class="card-left">
+          <div class="card-time">13:20 - 14:05</div>
+          <div class="card-info"><h3>PIB Spanish L2 - A1.1 - 6</h3><p>Room 1324 • Bevilacqua, Renata</p></div>
+        </div>
+        <span class="rating-badge">★ 7.9/10</span>
+      </div>
+      <div class="class-card" data-start="14:10" data-end="14:55">
+        <div class="card-left">
+          <div class="card-time">14:10 - 14:55</div>
+          <div class="card-info"><h3>History/Geography - 6</h3><p>Room 3206 • Davis, Sarai</p></div>
+        </div>
+        <span class="rating-badge">★ 5.3/10</span>
+      </div>
+      <div class="class-card" data-start="15:00" data-end="15:45">
+        <div class="card-left">
+          <div class="card-time">15:00 - 15:45</div>
+          <div class="card-info"><h3>History/Geography - 6</h3><p>Room 3206 • Davis, Sarai</p></div>
+        </div>
+        <span class="rating-badge">★ 5.3/10</span>
+      </div>
+    </div>
+
+    <!-- WEDNESDAY -->
+    <div class="day-schedule" id="day-3">
+      <div class="class-card" data-start="08:05" data-end="08:50">
+        <div class="card-left">
+          <div class="card-time">08:05 - 08:50</div>
+          <div class="card-info"><h3>Extended Math - 6</h3><p>Room 1225 • Olmedo, Jose</p></div>
+        </div>
+        <span class="rating-badge">★ 7.8/10</span>
+      </div>
+      <div class="class-card" data-start="08:55" data-end="09:40">
+        <div class="card-left">
+          <div class="card-time">08:55 - 09:40</div>
+          <div class="card-info"><h3>Extended Math - 6</h3><p>Room 1225 • Olmedo, Jose</p></div>
+        </div>
+        <span class="rating-badge">★ 7.8/10</span>
+      </div>
+      <div class="class-card" data-start="09:55" data-end="10:40">
+        <div class="card-left">
+          <div class="card-time">09:55 - 10:40</div>
+          <div class="card-info"><h3>Integrated Science - 6</h3><p>Room 2333 • Zepeda, Jesus</p></div>
+        </div>
+        <span class="rating-badge">★ 9.5/10</span>
+      </div>
+      <div class="class-card" data-start="10:45" data-end="11:30">
+        <div class="card-left">
+          <div class="card-time">10:45 - 11:30</div>
+          <div class="card-info"><h3>Integrated Science - 6</h3><p>Room 2333 • Zepeda, Jesus</p></div>
+        </div>
+        <span class="rating-badge">★ 9.5/10</span>
+      </div>
+      <div class="class-card" data-start="11:35" data-end="12:20">
+        <div class="card-left">
+          <div class="card-time">11:35 - 12:20</div>
+          <div class="card-info"><h3>PIB Spanish L2 - A1.1 - 6</h3><p>Room 1324 • Bevilacqua, Renata</p></div>
+        </div>
+        <span class="rating-badge">★ 7.9/10</span>
+      </div>
+      <div class="class-card" data-start="12:20" data-end="13:15">
+        <div class="card-left">
+          <div class="card-time">12:20 - 13:15</div>
+          <div class="card-info"><h3>Lunch</h3><p>Cafeteria</p></div>
+        </div>
+        <span class="rating-badge">★ 10/10</span>
+      </div>
+      <div class="class-card" data-start="13:20" data-end="14:05">
+        <div class="card-left">
+          <div class="card-time">13:20 - 14:05</div>
+          <div class="card-info"><h3>Computer - 6/6eme</h3><p>Room 3102 • Arraour, Ismahene</p></div>
+        </div>
+        <span class="rating-badge">★ 10/10</span>
+      </div>
+      <div class="class-card" data-start="14:10" data-end="14:55">
+        <div class="card-left">
+          <div class="card-time">14:10 - 14:55</div>
+          <div class="card-info"><h3>Computer - 6/6eme</h3><p>Room 3102 • Arraour, Ismahene</p></div>
+        </div>
+        <span class="rating-badge">★ 10/10</span>
+      </div>
+      <div class="class-card" data-start="15:00" data-end="15:45">
+        <div class="card-left">
+          <div class="card-time">15:00 - 15:45</div>
+          <div class="card-info"><h3>Hindi MS L3 Beginner 6</h3><p>Room 1318 • Mehta, Nikhil</p></div>
+        </div>
+        <span class="rating-badge">★ 1/10</span>
+      </div>
+      <div class="class-card" data-start="15:45" data-end="16:35">
+        <div class="card-left">
+          <div class="card-time">15:45 - 16:35</div>
+          <div class="card-info"><h3>Homework</h3><p>Study Hall</p></div>
+        </div>
+      </div>
+      <div class="class-card" data-start="16:45" data-end="17:45">
+        <div class="card-left">
+          <div class="card-time">16:45 - 17:45</div>
+          <div class="card-info"><h3>Soccer</h3><p>Field</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- THURSDAY -->
+    <div class="day-schedule" id="day-4">
+      <div class="class-card" data-start="08:05" data-end="08:50">
+        <div class="card-left">
+          <div class="card-time">08:05 - 08:50</div>
+          <div class="card-info"><h3>P.E. / EPS - 6/6eme</h3><p>PAAC • Salinas, Vanessa</p></div>
+        </div>
+        <span class="rating-badge">★ 8.5/10</span>
+      </div>
+      <div class="class-card" data-start="08:55" data-end="09:40">
+        <div class="card-left">
+          <div class="card-time">08:55 - 09:40</div>
+          <div class="card-info"><h3>P.E. / EPS - 6/6eme</h3><p>PAAC • Salinas, Vanessa</p></div>
+        </div>
+        <span class="rating-badge">★ 8.5/10</span>
+      </div>
+      <div class="class-card" data-start="09:55" data-end="10:40">
+        <div class="card-left">
+          <div class="card-time">09:55 - 10:40</div>
+          <div class="card-info"><h3>English Lit & Lang - 6/6eme</h3><p>Room 3320 • Molly, Jean Boyd</p></div>
+        </div>
+        <span class="rating-badge">★ 6.9/10</span>
+      </div>
+      <div class="class-card" data-start="10:45" data-end="11:30">
+        <div class="card-left">
+          <div class="card-time">10:45 - 11:30</div>
+          <div class="card-info"><h3>English Lit & Lang - 6/6eme</h3><p>Room 3320 • Molly, Jean Boyd</p></div>
+        </div>
+        <span class="rating-badge">★ 6.9/10</span>
+      </div>
+      <div class="class-card" data-start="11:35" data-end="12:20">
+        <div class="card-left">
+          <div class="card-time">11:35 - 12:20</div>
+          <div class="card-info"><h3>Fine Arts - Digital Photography</h3><p>Room 501 • Lee, Ha Na</p></div>
+        </div>
+        <span class="rating-badge">★ 8.5/10</span>
+      </div>
+      <div class="class-card" data-start="12:20" data-end="13:15">
+        <div class="card-left">
+          <div class="card-time">12:20 - 13:15</div>
+          <div class="card-info"><h3>Lunch</h3><p>Cafeteria</p></div>
+        </div>
+        <span class="rating-badge">★ 10/10</span>
+      </div>
+      <div class="class-card" data-start="13:20" data-end="14:05">
+        <div class="card-left">
+          <div class="card-time">13:20 - 14:05</div>
+          <div class="card-info"><h3>PIB Spanish L2 - A1.1 - 6</h3><p>Room 1324 • Bevilacqua, Renata</p></div>
+        </div>
+        <span class="rating-badge">★ 7.9/10</span>
+      </div>
+      <div class="class-card" data-start="14:10" data-end="14:55">
+        <div class="card-left">
+          <div class="card-time">14:10 - 14:55</div>
+          <div class="card-info"><h3>History/Geography - 6</h3><p>Room 3206 • Davis, Sarai</p></div>
+        </div>
+        <span class="rating-badge">★ 5.3/10</span>
+      </div>
+      <div class="class-card" data-start="15:00" data-end="15:45">
+        <div class="card-left">
+          <div class="card-time">15:00 - 15:45</div>
+          <div class="card-info"><h3>History/Geography - 6</h3><p>Room 3206 • Davis, Sarai</p></div>
+        </div>
+        <span class="rating-badge">★ 5.3/10</span>
+      </div>
+      <div class="class-card" data-start="15:45" data-end="16:35">
+        <div class="card-left">
+          <div class="card-time">15:45 - 16:35</div>
+          <div class="card-info"><h3>Homework</h3><p>Study Hall</p></div>
+        </div>
+      </div>
+      <div class="class-card" data-start="16:45" data-end="17:45">
+        <div class="card-left">
+          <div class="card-time">16:45 - 17:45</div>
+          <div class="card-info"><h3>Soccer</h3><p>Field</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FRIDAY -->
+    <div class="day-schedule" id="day-5">
+      <div class="class-card" data-start="08:05" data-end="08:50">
+        <div class="card-left">
+          <div class="card-time">08:05 - 08:50</div>
+          <div class="card-info"><h3>Extended Math - 6</h3><p>Room 1225 • Olmedo, Jose</p></div>
+        </div>
+        <span class="rating-badge">★ 7.8/10</span>
+      </div>
+      <div class="class-card" data-start="08:55" data-end="09:40">
+        <div class="card-left">
+          <div class="card-time">08:55 - 09:40</div>
+          <div class="card-info"><h3>Extended Math - 6</h3><p>Room 1225 • Olmedo, Jose</p></div>
+        </div>
+        <span class="rating-badge">★ 7.8/10</span>
+      </div>
+      <div class="class-card" data-start="09:55" data-end="10:40">
+        <div class="card-left">
+          <div class="card-time">09:55 - 10:40</div>
+          <div class="card-info"><h3>Integrated Science - 6</h3><p>Room 2333 • Zepeda, Jesus</p></div>
+        </div>
+        <span class="rating-badge">★ 9.5/10</span>
+      </div>
+      <div class="class-card" data-start="10:45" data-end="11:30">
+        <div class="card-left">
+          <div class="card-time">10:45 - 11:30</div>
+          <div class="card-info"><h3>Integrated Science - 6</h3><p>Room 2333 • Zepeda, Jesus</p></div>
+        </div>
+        <span class="rating-badge">★ 9.5/10</span>
+      </div>
+      <div class="class-card" data-start="11:35" data-end="12:20">
+        <div class="card-left">
+          <div class="card-time">11:35 - 12:20</div>
+          <div class="card-info"><h3>PIB Spanish L2 - A1.1 - 6</h3><p>Room 1324 • Bevilacqua, Renata</p></div>
+        </div>
+        <span class="rating-badge">★ 7.9/10</span>
+      </div>
+      <div class="class-card" data-start="12:20" data-end="13:15">
+        <div class="card-left">
+          <div class="card-time">12:20 - 13:15</div>
+          <div class="card-info"><h3>Lunch</h3><p>Cafeteria</p></div>
+        </div>
+        <span class="rating-badge">★ 10/10</span>
+      </div>
+      <div class="class-card" data-start="13:20" data-end="14:05">
+        <div class="card-left">
+          <div class="card-time">13:20 - 14:05</div>
+          <div class="card-info"><h3>Study Period - 6</h3><p>Room 1322 • Ma, Yun</p></div>
+        </div>
+        <span class="rating-badge">★ 10/10</span>
+      </div>
+      <div class="class-card" data-start="14:10" data-end="14:55">
+        <div class="card-left">
+          <div class="card-time">14:10 - 14:55</div>
+          <div class="card-info"><h3>Study Period - 6</h3><p>Room 1322 • Ma, Yun</p></div>
+        </div>
+        <span class="rating-badge">★ 10/10</span>
+      </div>
+      <div class="class-card" data-start="15:00" data-end="15:45">
+        <div class="card-left">
+          <div class="card-time">15:00 - 15:45</div>
+          <div class="card-info"><h3>Hindi MS L3 Beginner 6</h3><p>Room 1318 • Mehta, Nikhil</p></div>
+        </div>
+        <span class="rating-badge">★ 1/10</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const themeBtn = document.getElementById('theme-toggle');
+      if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-theme');
+        themeBtn.innerText = '☀️';
+      }
+
+      themeBtn.addEventListener('click', () => {
+        document.body.classList.toggle('dark-theme');
+        const isDark = document.body.classList.contains('dark-theme');
+        themeBtn.innerText = isDark ? '☀️' : '🌙';
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      });
+
+      const daySelect = document.getElementById('day-select');
+      const currentDayNum = new Date().getDay();
+      daySelect.value = (currentDayNum >= 1 && currentDayNum <= 5) ? String(currentDayNum) : "1";
+
+      function switchDay() {
+        document.querySelectorAll('.day-schedule').forEach(el => el.classList.remove('active-day'));
+        const activeSchedule = document.getElementById(`day-${daySelect.value}`);
+        if (activeSchedule) activeSchedule.classList.add('active-day');
+      }
+      
+      daySelect.addEventListener('change', switchDay);
+      switchDay();
+
+      function timeToMinutes(timeStr) {
+        if (!timeStr) return 0;
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+      }
+
+      function formatCountdown(totalSeconds) {
+        if (totalSeconds < 0) return "00:00";
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      }
+
+      function updateScheduleTracker() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        
+        document.getElementById('current-clock').innerText = `${hours}:${minutes}:${seconds}`;
+
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        const currentTotalSeconds = currentMinutes * 60 + now.getSeconds();
+
+        const activeDaySchedule = document.querySelector('.day-schedule.active-day');
+        if (!activeDaySchedule) return;
+
+        const classCards = activeDaySchedule.querySelectorAll('.class-card');
+        let activeCard = null;
+        let dayStartMinutes = Infinity;
+        let dayEndMinutes = 0;
+
+        document.querySelectorAll('.class-card').forEach(card => card.classList.remove('active-class'));
+
+        classCards.forEach(card => {
+          const startMins = timeToMinutes(card.dataset.start);
+          const endMins = timeToMinutes(card.dataset.end);
+
+          if (startMins < dayStartMinutes) dayStartMinutes = startMins;
+          if (endMins > dayEndMinutes) dayEndMinutes = endMins;
+
+          if (currentMinutes >= startMins && currentMinutes < endMins) {
+            activeCard = card;
+            card.classList.add('active-class');
+          }
+        });
+
+        const statusTag = document.getElementById('active-status-tag');
+        const classTimer = document.getElementById('class-countdown');
+        const dayTimer = document.getElementById('day-countdown');
+        const progressBar = document.getElementById('day-progress');
+
+        if (activeCard) {
+          statusTag.innerText = "In Session";
+          const endMins = timeToMinutes(activeCard.dataset.end);
+          const secondsRemaining = (endMins * 60) - currentTotalSeconds;
+          classTimer.innerText = formatCountdown(secondsRemaining);
+        } else {
+          statusTag.innerText = "Break / Off Duty";
+          classTimer.innerText = "--:--";
+        }
+
+        const dayStartSecs = dayStartMinutes * 60;
+        const dayEndSecs = dayEndMinutes * 60;
+
+        if (currentTotalSeconds < dayStartSecs) {
+          dayTimer.innerText = "Not Started";
+          progressBar.style.width = "0%";
+        } else if (currentTotalSeconds >= dayEndSecs) {
+          dayTimer.innerText = "Day Complete";
+          progressBar.style.width = "100%";
+        } else {
+          const secondsLeftInDay = dayEndSecs - currentTotalSeconds;
+          dayTimer.innerText = formatCountdown(secondsLeftInDay);
+
+          const totalDayDuration = dayEndSecs - dayStartSecs;
+          const elapsedSeconds = currentTotalSeconds - dayStartSecs;
+          const progressPercent = Math.min(100, Math.max(0, (elapsedSeconds / totalDayDuration) * 100));
+          progressBar.style.width = `${progressPercent}%`;
+        }
+      }
+
+      updateScheduleTracker();
+      setInterval(updateScheduleTracker, 1000);
+    });
+  </script>
+</body>
+</html>
